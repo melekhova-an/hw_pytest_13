@@ -6,22 +6,29 @@ import random
 
 import pytest
 from selene.support.shared import browser
+from selenium import webdriver
 
 
-@pytest.fixture()
-def browser_open():
-    browser.open('https://github.com')
-    browser.config.window_width = random.randint(375, 1500)
+@pytest.fixture(params=[(1250, 700), (1500, 1050), (504, 340), (455, 550)])
+def browser_open(request):
+    chrome_options = webdriver.ChromeOptions()
+    browser.config.driver_options = chrome_options
+    browser.config.window_width = request.param[0]
+    browser.config.window_height = request.param[1]
+    yield browser
+    browser.quit()
+
 
 def test_github_desktop(browser_open):
-    if browser.config.window_width <= 1012:
-        pytest.skip('Пропускаем десктопный тест, если соотношение сторон мобильное')
-    else:
-        browser.element('[href="/login"]').click()
+    if browser._config.window_width < 1020:
+        pytest.skip(reason='Пропускаем десктопный тест - соотношение сторон мобильное')
+    browser.open('https://github.com')
+    browser.element('[href="/login"]').click()
+
 
 def test_github_mobile(browser_open):
-    if browser.config.window_width >= 1011:
-        pytest.skip('Пропускаем мобильный тест, если соотношение сторон десктопное')
-    else:
-        browser.element('[class="Button-content"]').click()
-        browser.element('[href="/login"]').click()
+    if browser._config.window_width > 1200:
+        pytest.skip(reason='Пропускаем мобильный тест - соотношение сторон десктопное')
+    browser.open('https://github.com')
+    browser.element('[class="Button-content"]').click()
+    browser.element('[href="/login"]').click()
